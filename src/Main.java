@@ -1,15 +1,28 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+import java.util.ArrayList;
+import java.util.concurrent.CyclicBarrier;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+public class Main {
+    public static void main(String[] args) throws Exception {
+        int N = 2;
+        int NB_P = 2;
+        int NB_S = 3;
+        int tempsExecution = 5000;
+
+        CyclicBarrier barriereConnectPub = new CyclicBarrier(2);
+        CyclicBarrier barriereConnectSub = new CyclicBarrier(2);
+
+        ArrayList<Publisher> publishers = new ArrayList<Publisher>();
+        for (int i = 0; i < NB_P; i++) {
+            publishers.add(new Publisher("publisher" + i, "indemnisation", barriereConnectPub));
+            publishers.add(new Publisher("publisher" + i, "tarification", barriereConnectPub));
         }
+
+        ArrayList<Subscriber> subscribers = new ArrayList<Subscriber>();
+        for (int i = 0; i < NB_S; i++) {
+            subscribers.add(new Subscriber("subscriber" + i, "indemnisation", barriereConnectSub));
+            subscribers.add(new Subscriber("subscriber" + i, "tarification", barriereConnectSub));
+        }
+
+        Broker broker = new Broker(tempsExecution, barriereConnectPub, barriereConnectSub);
     }
 }

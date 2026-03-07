@@ -7,13 +7,13 @@ public class Subscriber extends Thread {
     private String app;
     private CyclicBarrier barriereConnectSub;
 
-    public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub) throws Exception {
+    public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub) throws Exception {
         if (!app.equals("indemnisation") && !app.equals("tarification")) {
             throw new Exception("Doit être indemnisation ou tarification");
         }
         this.prefixe = prefixe;
         this.app = app;
-        this.barriereConnectSub = barriereConnectPub;
+        this.barriereConnectSub = barriereConnectSub;
     }
 
     private synchronized void connect_sub() {

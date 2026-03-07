@@ -7,7 +7,7 @@ public class Publisher extends Thread {
     private String app;
     private CyclicBarrier barriereConnectPub;
 
-    public Publisher(String prefixe, String app, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub) throws Exception {
+    public Publisher(String prefixe, String app, CyclicBarrier barriereConnectPub) throws Exception {
         if (!app.equals("indemnisation") && !app.equals("tarification")) {
             throw new Exception("Doit être indemnisation ou tarification");
         }
