@@ -6,27 +6,33 @@ public class Subscriber extends Thread {
     private String prefixe;
     private String app;
     private CyclicBarrier barriereConnectSub;
+    private CyclicBarrier barriereSub;
 
-    public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub) throws Exception {
-        if (!app.equals("indemnisation") && !app.equals("tarification")) {
-            throw new Exception("Doit être indemnisation ou tarification");
-        }
+    public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
         this.prefixe = prefixe;
         this.app = app;
         this.barriereConnectSub = barriereConnectSub;
+        this.barriereSub = barriereSub;
     }
 
-    private synchronized void connect_sub() {
+    private void connect_sub() {
+        synchronized (Subscriber.class) {
+            try {
+                this.barriereConnectSub.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
+            }
+            System.out.printf("Connection au broker par %s (%s).%n", this.prefixe, this.app);
+            sub();
+        }
+    }
+
+    private void sub() {
         try {
-            this.barriereConnectSub.await();
+            barriereSub.await();
         } catch (InterruptedException | BrokenBarrierException e) {
             System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
         }
-        System.out.printf("Connection au broker par %s (%s).%n", this.prefixe, this.app);
-        sub();
-    }
-
-    private synchronized void sub() {
         System.out.printf("Réception d'un message par %s (%s).%n", this.prefixe, this.app);
     }
 

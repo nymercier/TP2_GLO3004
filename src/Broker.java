@@ -8,13 +8,18 @@ public class Broker extends Thread {
     private int N;
     private int tempsExecution;
     private CyclicBarrier barriereConnectPub;
+    private CyclicBarrier barrierePub;
     private CyclicBarrier barriereConnectSub;
+    private CyclicBarrier barriereSub;
 
-    public Broker(int tempsExecution, CyclicBarrier barriereConnectPub, CyclicBarrier barriereConnectSub) {
+    public Broker(int tempsExecution, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub,
+                  CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
         this.nombreMessagesEnTraitement = 0;
         this.tempsExecution = tempsExecution;
         this.barriereConnectPub = barriereConnectPub;
+        this.barrierePub = barrierePub;
         this.barriereConnectSub = barriereConnectSub;
+        this.barriereSub = barriereSub;
     }
 
     private void connect_pub() {
@@ -27,8 +32,12 @@ public class Broker extends Thread {
     }
 
     private void pub() {
+        try {
+            this.barrierePub.await();
+        } catch (InterruptedException | BrokenBarrierException e) {
+            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
+        }
         nombreMessagesEnTraitement++;
-        System.out.printf("Il y a maintenant %d messages en traitement.", this.nombreMessagesEnTraitement);
     }
 
     private void connect_sub() {
@@ -41,8 +50,12 @@ public class Broker extends Thread {
     }
 
     private void sub() {
+        try {
+            this.barriereSub.await();
+        } catch (InterruptedException | BrokenBarrierException e) {
+            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
+        }
         nombreMessagesEnTraitement--;
-        System.out.printf("Il y a maintenant %d messages en traitement.", this.nombreMessagesEnTraitement);
     }
 
     public void run() {
