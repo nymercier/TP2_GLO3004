@@ -3,10 +3,10 @@ import java.util.concurrent.CyclicBarrier;
 
 public class Publisher extends Thread {
 
-    private String prefixe;
-    private String app;
-    private CyclicBarrier barriereConnectPub;
-    private CyclicBarrier barrierePub;
+    private final String prefixe;
+    private final String app;
+    private final CyclicBarrier barriereConnectPub;
+    private final CyclicBarrier barrierePub;
     private boolean interrupted;
 
     public Publisher(String prefixe, String app, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub) {

@@ -5,16 +5,17 @@ import java.util.concurrent.CyclicBarrier;
 public class Broker extends Thread {
 
     private int nombreMessagesEnTraitement;
-    private int N;
-    private int tempsExecution;
-    private CyclicBarrier barriereConnectPub;
-    private CyclicBarrier barrierePub;
-    private CyclicBarrier barriereConnectSub;
-    private CyclicBarrier barriereSub;
+    private final int N;
+    private final int tempsExecution;
+    private final CyclicBarrier barriereConnectPub;
+    private final CyclicBarrier barrierePub;
+    private final CyclicBarrier barriereConnectSub;
+    private final CyclicBarrier barriereSub;
 
-    public Broker(int tempsExecution, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub,
+    public Broker(int N, int tempsExecution, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub,
                   CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
         this.nombreMessagesEnTraitement = 0;
+        this.N = N;
         this.tempsExecution = tempsExecution;
         this.barriereConnectPub = barriereConnectPub;
         this.barrierePub = barrierePub;

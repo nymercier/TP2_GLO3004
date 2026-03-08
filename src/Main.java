@@ -13,43 +13,42 @@ public class Main {
         CyclicBarrier barriereConnectSub = new CyclicBarrier(2);
         CyclicBarrier barriereSub = new CyclicBarrier(2);
 
-        ArrayList<Publisher> publishers = new ArrayList<Publisher>();
+        ArrayList<Publisher> publishers = new ArrayList<>();
         for (int i = 0; i < NB_P; i++) {
             publishers.add(new Publisher("publisher" + i, "indemnisation", barriereConnectPub, barrierePub));
             publishers.add(new Publisher("publisher" + i, "tarification", barriereConnectPub, barrierePub));
         }
 
-        ArrayList<Subscriber> subscribers = new ArrayList<Subscriber>();
+        ArrayList<Subscriber> subscribers = new ArrayList<>();
         for (int i = 0; i < NB_S; i++) {
             subscribers.add(new Subscriber("subscriber" + i, "indemnisation", barriereConnectSub, barriereSub));
             subscribers.add(new Subscriber("subscriber" + i, "tarification", barriereConnectSub, barriereSub));
         }
 
-        Broker broker = new Broker(tempsExecution, barriereConnectPub, barrierePub, barriereConnectSub, barriereSub);
+        Broker broker = new Broker(tempsExecution, N, barriereConnectPub, barrierePub, barriereConnectSub, barriereSub);
 
-        for (int i = 0; i < publishers.size(); i++) {
-            publishers.get(i).start();
+        for (Publisher publisher : publishers) {
+            publisher.start();
         }
 
-        for (int i = 0; i < subscribers.size(); i++) {
-            subscribers.get(i).start();
+        for (Subscriber subscriber : subscribers) {
+            subscriber.start();
         }
 
         broker.start();
-        long temp = System.currentTimeMillis();
         broker.join();
 
-        for (int i = 0; i < publishers.size(); i++) {
-            publishers.get(i).arreter();
-            if (publishers.get(i).getState() == Thread.State.WAITING || publishers.get(i).getState() == Thread.State.BLOCKED) {
-                publishers.get(i).interrupt();
+        for (Publisher publisher : publishers) {
+            publisher.arreter();
+            if (publisher.getState() == Thread.State.WAITING || publisher.getState() == Thread.State.BLOCKED) {
+                publisher.interrupt();
             }
         }
 
-        for (int i = 0; i < subscribers.size(); i++) {
-            subscribers.get(i).arreter();
-            if (subscribers.get(i).getState() == Thread.State.WAITING || subscribers.get(i).getState() == Thread.State.BLOCKED) {
-                subscribers.get(i).interrupt();
+        for (Subscriber subscriber : subscribers) {
+            subscriber.arreter();
+            if (subscriber.getState() == Thread.State.WAITING || subscriber.getState() == Thread.State.BLOCKED) {
+                subscriber.interrupt();
             }
         }
     }
