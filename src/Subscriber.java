@@ -7,20 +7,22 @@ public class Subscriber extends Thread {
     private String app;
     private CyclicBarrier barriereConnectSub;
     private CyclicBarrier barriereSub;
+    private boolean interrupted;
 
     public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
         this.prefixe = prefixe;
         this.app = app;
         this.barriereConnectSub = barriereConnectSub;
         this.barriereSub = barriereSub;
+        this.interrupted = false;
     }
 
     private void connect_sub() {
         synchronized (Subscriber.class) {
             try {
                 this.barriereConnectSub.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
-                System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
+            } catch (BrokenBarrierException | InterruptedException e) {
+                System.exit(0);
             }
             System.out.printf("Connection au broker par %s (%s).%n", this.prefixe, this.app);
             sub();
@@ -30,8 +32,8 @@ public class Subscriber extends Thread {
     private void sub() {
         try {
             barriereSub.await();
-        } catch (InterruptedException | BrokenBarrierException e) {
-            System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
+        } catch (BrokenBarrierException | InterruptedException e) {
+            System.exit(0);
         }
         System.out.printf("Réception d'un message par %s (%s).%n", this.prefixe, this.app);
     }
@@ -40,8 +42,14 @@ public class Subscriber extends Thread {
         System.out.printf("Consommation d'un message par %s (%s).%n", this.prefixe, this.app);
     }
 
+    public void arreter() {
+        this.interrupted = true;
+    }
+
     public void run() {
-        connect_sub();
-        consume();
+        while (!this.interrupted) {
+            connect_sub();
+            consume();
+        }
     }
 }

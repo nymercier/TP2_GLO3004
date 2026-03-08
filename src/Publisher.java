@@ -7,12 +7,14 @@ public class Publisher extends Thread {
     private String app;
     private CyclicBarrier barriereConnectPub;
     private CyclicBarrier barrierePub;
+    private boolean interrupted;
 
     public Publisher(String prefixe, String app, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub) {
         this.prefixe = prefixe;
         this.app = app;
         this.barriereConnectPub = barriereConnectPub;
         this.barrierePub = barrierePub;
+        this.interrupted = false;
     }
 
     private void supply() {
@@ -23,8 +25,8 @@ public class Publisher extends Thread {
         synchronized (Publisher.class) {
             try {
                 this.barriereConnectPub.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
-                System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
+            } catch (BrokenBarrierException | InterruptedException e) {
+                System.exit(0);
             }
             System.out.printf("Connection au broker par %s (%s).%n", this.prefixe, this.app);
             pub();
@@ -34,14 +36,20 @@ public class Publisher extends Thread {
     private void pub() {
         try {
             this.barrierePub.await();
-        } catch (InterruptedException | BrokenBarrierException e) {
-            System.out.printf("PROBLÈME: le thread %s (%s) s'est interrompu ou la barrière s'est brisée.", this.prefixe, this.app);
+        } catch (BrokenBarrierException | InterruptedException e) {
+            System.exit(0);
         }
         System.out.printf("Publication d'un message par %s (%s).%n", this.prefixe, this.app);
     }
 
+    public void arreter() {
+        this.interrupted = true;
+    }
+
     public void run() {
-        supply();
-        connect_pub();
+        while (!this.interrupted) {
+            supply();
+            connect_pub();
+        }
     }
 }

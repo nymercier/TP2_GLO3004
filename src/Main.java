@@ -6,7 +6,7 @@ public class Main {
         int N = 2;
         int NB_P = 1;
         int NB_S = 1;
-        int tempsExecution = 5000;
+        int tempsExecution = 1000;
 
         CyclicBarrier barriereConnectPub = new CyclicBarrier(2);
         CyclicBarrier barrierePub = new CyclicBarrier(2);
@@ -36,5 +36,21 @@ public class Main {
         }
 
         broker.start();
+        long temp = System.currentTimeMillis();
+        broker.join();
+
+        for (int i = 0; i < publishers.size(); i++) {
+            publishers.get(i).arreter();
+            if (publishers.get(i).getState() == Thread.State.WAITING || publishers.get(i).getState() == Thread.State.BLOCKED) {
+                publishers.get(i).interrupt();
+            }
+        }
+
+        for (int i = 0; i < subscribers.size(); i++) {
+            subscribers.get(i).arreter();
+            if (subscribers.get(i).getState() == Thread.State.WAITING || subscribers.get(i).getState() == Thread.State.BLOCKED) {
+                subscribers.get(i).interrupt();
+            }
+        }
     }
 }
