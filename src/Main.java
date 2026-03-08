@@ -6,20 +6,20 @@ public class Main {
         int N = 2;
         int NB_P = 1;
         int NB_S = 1;
-        int tempsExecution = 1000;
+        int tempsExecution = 100;
 
         CyclicBarrier barriereConnectPub = new CyclicBarrier(2);
         CyclicBarrier barrierePub = new CyclicBarrier(2);
         CyclicBarrier barriereConnectSub = new CyclicBarrier(2);
         CyclicBarrier barriereSub = new CyclicBarrier(2);
 
-        ArrayList<Publisher> publishers = new ArrayList<>();
+        ArrayList<Publisher> publishers = new ArrayList<Publisher>();
         for (int i = 0; i < NB_P; i++) {
             publishers.add(new Publisher("publisher" + i, "indemnisation", barriereConnectPub, barrierePub));
             publishers.add(new Publisher("publisher" + i, "tarification", barriereConnectPub, barrierePub));
         }
 
-        ArrayList<Subscriber> subscribers = new ArrayList<>();
+        ArrayList<Subscriber> subscribers = new ArrayList<Subscriber>();
         for (int i = 0; i < NB_S; i++) {
             subscribers.add(new Subscriber("subscriber" + i, "indemnisation", barriereConnectSub, barriereSub));
             subscribers.add(new Subscriber("subscriber" + i, "tarification", barriereConnectSub, barriereSub));
@@ -27,28 +27,28 @@ public class Main {
 
         Broker broker = new Broker(tempsExecution, N, barriereConnectPub, barrierePub, barriereConnectSub, barriereSub);
 
-        for (Publisher publisher : publishers) {
-            publisher.start();
+        for (int i = 0; i < publishers.size(); i++) {
+            publishers.get(i).start();
         }
 
-        for (Subscriber subscriber : subscribers) {
-            subscriber.start();
+        for (int i = 0; i < subscribers.size(); i++) {
+            subscribers.get(i).start();
         }
 
         broker.start();
         broker.join();
 
-        for (Publisher publisher : publishers) {
-            publisher.arreter();
-            if (publisher.getState() == Thread.State.WAITING || publisher.getState() == Thread.State.BLOCKED) {
-                publisher.interrupt();
+        for (int i = 0; i < publishers.size(); i++) {
+            publishers.get(i).arreter();
+            if (publishers.get(i).getState() == Thread.State.WAITING || publishers.get(i).getState() == Thread.State.BLOCKED) {
+                publishers.get(i).interrupt();
             }
         }
 
-        for (Subscriber subscriber : subscribers) {
-            subscriber.arreter();
-            if (subscriber.getState() == Thread.State.WAITING || subscriber.getState() == Thread.State.BLOCKED) {
-                subscriber.interrupt();
+        for (int i = 0; i < subscribers.size(); i++) {
+            subscribers.get(i).arreter();
+            if (subscribers.get(i).getState() == Thread.State.WAITING || subscribers.get(i).getState() == Thread.State.BLOCKED) {
+                subscribers.get(i).interrupt();
             }
         }
     }

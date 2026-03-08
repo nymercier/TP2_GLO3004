@@ -3,10 +3,10 @@ import java.util.concurrent.CyclicBarrier;
 
 public class Subscriber extends Thread {
 
-    private final String prefixe;
-    private final String app;
-    private final CyclicBarrier barriereConnectSub;
-    private final CyclicBarrier barriereSub;
+    private String prefixe;
+    private String app;
+    private CyclicBarrier barriereConnectSub;
+    private CyclicBarrier barriereSub;
     private boolean interrupted;
 
     public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
