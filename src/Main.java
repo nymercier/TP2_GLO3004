@@ -9,8 +9,8 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) throws Exception {
         int N = 2;
-        int NB_P = 1;
-        int NB_S = 1;
+        int NB_P = 2;
+        int NB_S = 3;
         int tempsExecution = 5;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
@@ -52,9 +52,6 @@ public class Main {
         // On start les threads
         for (Publisher p  : publishers)  p.start();
         for (Subscriber s : subscribers) s.start();
-
-        // Durée d'exécution
-        Thread.sleep(tempsExecution);
 
         // Pour le paramètre t (exécution pendant t ms)
         try {
