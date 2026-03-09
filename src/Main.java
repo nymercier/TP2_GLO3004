@@ -1,24 +1,22 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.CyclicBarrier;
+
 
 // Je pense que c'est plus un sémaphore qu'une barrière?
 // Compteur [0..N] du FSP :
 
 public class Main {
     public static void main(String[] args) throws Exception {
-//        int N = 2;
-//        int NB_P = 1;
-//        int NB_S = 1;
-//        int tempsExecution = 100;
+        int N = 2;
+        int NB_P = 1;
+        int NB_S = 1;
+        int tempsExecution = 5;
 
-        int N = Integer.parseInt(System.getProperty("n", "1"));
-        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
-        int NB_S = Integer.parseInt(System.getProperty("s", "1"));
-        int tempsExecution = Integer.parseInt(System.getProperty("t", "1000"));
+//        int N = Integer.parseInt(System.getProperty("n", "1"));
+//        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
+//        int NB_S = Integer.parseInt(System.getProperty("s", "1"));
+//        int tempsExecution = Integer.parseInt(System.getProperty("t", "5"));
 
         System.out.println("=== SYSTEM démarre ===");
         System.out.println("  n=" + N + "  (capacité broker)");
@@ -32,7 +30,7 @@ public class Main {
         // Un Broker par app
         Map<String, Broker> brokers = new HashMap<>();
         for (String app : apps) {
-            brokers.put(app, new Broker(N));
+            brokers.put(app, new Broker(app, N));
         }
 
         // NB_P publishers par app

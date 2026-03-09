@@ -13,25 +13,33 @@ import java.util.concurrent.Semaphore;
 public class Broker {
 
     private final int N;
+    private final String app;
     private final Semaphore places;    // contrôle connect_pub
     private final Semaphore messages;  // msgs présents → contrôle connect_sub
     private boolean running = true;
 
-    public Broker(int n) {
+    public Broker(String app, int n) {
         this.N        = n;
+        this.app      = app;
         this.places   = new Semaphore(N, true);             // éviter la famine
         this.messages = new Semaphore(0, true);
     }
 
-//    private void log(String threadName, String action) {
-//        System.out.println("[Broker " + N + "] " + threadName + " " + action);
-//    }
+    private int nbMessages() {
+        return Math.max(0, N - places.availablePermits());
+    }
+
+    private void log(String threadName, String action) {
+        System.out.printf("[Broker %s | %d/%d msgs] %s %s%n",
+                app, nbMessages(), N, threadName, action);
+    }
+
 
     /**
      * connect_pub : le publisher attend qu'il y ait de la place
      * File est pleine (i == N).
      */
-    public void connectPub() throws InterruptedException {
+    public void connectPub(String threadName) throws InterruptedException {
         places.acquire();
     }
 
@@ -40,21 +48,24 @@ public class Broker {
      * Incrémente le compteur de messages disponibles.
      * Production
      */
-    public void pub() {
+    public void pub(String threadName) {
         messages.release(); // i → i+1
+        log(threadName, "PUB");
     }
 
-    public void closePub() {
+    public void closePub(String threadName) {
         // action observable dans les traces données par le prof
         // i.publisher.1 CLOSE_PUB
+        log(threadName, "CLOSE_PUB");
     }
 
     /**
      * connect_sub : le subscriber attend qu'il y ait un message
      * File est vide (i == 0).
      */
-    public void connectSub() throws InterruptedException {
+    public void connectSub(String threadName) throws InterruptedException {
         messages.acquire();
+        log(threadName, "CONNECT_SUB");
     }
 
     /**
@@ -62,13 +73,15 @@ public class Broker {
      * Libère un slot pour les publishers.
      * Consommation
      */
-    public void sub() {
-        places.release();   // i → i-1
+    public void sub(String threadName) {
+        places.release();          // i → i-1
+        log(threadName, "SUB");
     }
 
-    public void closeSub() {
+    public void closeSub(String threadName) {
         // action observable dans les traces données par le prof
         // i.subscriber.2 CLOSE_SUB
+        log(threadName, "CLOSE_SUB");
     }
 
     public boolean isRunning() {

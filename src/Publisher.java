@@ -9,10 +9,11 @@
 public class Publisher extends Thread {
 
     private final String app;      // "i" ou "t"
-    private final String prefixe;  // "publisher"
+    private final String prefixe;  // "publisher" ou "subscriber"
     private final int numero;
     private final Broker broker;
     private boolean running = true;
+    private final Object lock = new Object();
 
     public Publisher(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
@@ -32,17 +33,30 @@ public class Publisher extends Thread {
 
     // Sortir "proprement"
     private void connect_pub() throws InterruptedException {
-        broker.connectPub();  // bloque si file pleine
+        broker.connectPub(getName());  // bloque si file pleine
         System.out.println(label("CONNECT_PUB"));
     }
 
     private void pub() {
-        broker.pub();
+        broker.pub(getName());
+        checkAction(getName(), "PUB");
         System.out.println(label("PUB"));
     }
 
+    // Est-ce FORBIDDEN fonctionne ?
+    // Test pour le publisher seulement, juste pour voir.
+    // Oui, on pourrait aussi le faire pour sub si on le voulait.
+    private void checkAction(String name, String pub) {
+        synchronized (lock) {
+            // Règle FORBIDDEN : Un publisher ne fait pas de SUB, un subscriber ne fait pas de PUB
+            if (name.contains("publisher") && (pub.contains("SUB") || pub.contains("CONNECT_SUB"))) {
+                throw new IllegalStateException("VIOLATION FORBIDDEN: Publisher a tenté une action de Subscriber !");
+            }
+        }
+    }
+
     private void close_pub() {
-        broker.closePub();
+        broker.closePub(getName());
         System.out.println(label("CLOSE_PUB"));
     }
 
