@@ -36,7 +36,8 @@ public class Publisher extends Thread {
 
     private void supply() {
         String tempMessage = "";
-        for (int i = 0; i < 10 + ThreadLocalRandom.current().nextInt(15); i++) {
+        int longueur = 10 + ThreadLocalRandom.current().nextInt(15);
+        for (int i = 0; i <= longueur; i++) {
             tempMessage += (char)(ThreadLocalRandom.current().nextInt(26) + 97);
         }
         this.message = tempMessage;
