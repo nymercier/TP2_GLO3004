@@ -6,6 +6,10 @@
  * i.publisher.2 SUPPLY
  */
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+
 public class Publisher extends Thread {
 
     private final String app;      // "i" ou "t"
@@ -14,12 +18,16 @@ public class Publisher extends Thread {
     private final Broker broker;
     private boolean running = true;
     private final Object lock = new Object();
+    private String message;
+    private final Random generateurMessages;
 
     public Publisher(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
+        this.message = "";
+        this.generateurMessages = new Random();
         setName(app + "." + prefixe + "." + numero);
     }
 
@@ -28,7 +36,8 @@ public class Publisher extends Thread {
     }
 
     private void supply() {
-        System.out.println(label("SUPPLY"));
+        this.message = "test123";
+        System.out.println(label("SUPPLY message \"" + this.message + "\""));
     }
 
     // Sortir "proprement"
@@ -38,7 +47,7 @@ public class Publisher extends Thread {
     }
 
     private void pub() {
-        broker.pub(getName());
+        broker.pub(getName(), this.message);
         checkAction(getName(), "PUB");
         System.out.println(label("PUB"));
     }
@@ -64,6 +73,9 @@ public class Publisher extends Thread {
     public void run() {
         try {
             while (running) {
+                if (this.broker.nbMessages() == this.broker.getN()) {
+                    break;
+                }
                 supply();
                 connect_pub();
                 if (!running) break;

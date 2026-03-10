@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 /*
@@ -17,21 +18,30 @@ public class Broker {
     private final Semaphore places;    // contrôle connect_pub
     private final Semaphore messages;  // msgs présents → contrôle connect_sub
     private boolean running = true;
+    private ArrayList<String> listeMessages;
 
     public Broker(String app, int n) {
         this.N        = n;
         this.app      = app;
         this.places   = new Semaphore(N, true);             // éviter la famine
         this.messages = new Semaphore(0, true);
+        this.listeMessages = new ArrayList<String>();
     }
 
-    private int nbMessages() {
+    public int getN() { return this.N; }
+
+    public int nbMessages() {
         return Math.max(0, N - places.availablePermits());
     }
 
     private void log(String threadName, String action) {
         System.out.printf("[Broker %s | %d/%d msgs] %s %s%n",
                 app, nbMessages(), N, threadName, action);
+    }
+
+    private void log(String threadName, String action, String message) {
+        System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
+                app, nbMessages(), N, threadName, action, message);
     }
 
 
@@ -48,9 +58,14 @@ public class Broker {
      * Incrémente le compteur de messages disponibles.
      * Production
      */
-    public void pub(String threadName) {
+    public void pub(String threadName, String message) {
         messages.release(); // i → i+1
-        log(threadName, "PUB");
+        queue(message);
+        log(threadName, "PUB", message);
+    }
+
+    private void queue(String message) {
+        this.listeMessages.add(message);
     }
 
     public void closePub(String threadName) {
@@ -73,9 +88,10 @@ public class Broker {
      * Libère un slot pour les publishers.
      * Consommation
      */
-    public void sub(String threadName) {
+    public String sub(String threadName) {
         places.release();          // i → i-1
-        log(threadName, "SUB");
+        log(threadName, "SUB", this.listeMessages.getFirst());
+        return this.listeMessages.removeFirst();
     }
 
     public void closeSub(String threadName) {

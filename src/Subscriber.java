@@ -13,12 +13,14 @@ public class Subscriber extends Thread {
     private final int    numero;   // 1, 2, 3, ...
     private final Broker broker;
     private boolean running = true;
+    private String message;
 
     public Subscriber(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
+        this.message = "";
         setName(app + "." + prefixe + "." + numero);
     }
 
@@ -32,13 +34,14 @@ public class Subscriber extends Thread {
     }
 
     private void sub() {
-        broker.sub(getName());
+        this.message = broker.sub(getName());
         System.out.println(label("SUB"));
     }
 
     private void consume() {
-        System.out.println(label("CONSUME"));
+        System.out.println(label("CONSUME message \"" + this.message + "\""));
     }
+
     private void close_sub() {
         broker.closeSub(getName());
         System.out.println(label("CLOSE_SUB"));
@@ -48,6 +51,9 @@ public class Subscriber extends Thread {
     public void run() {
         try {
             while (running) {
+                if (this.broker.nbMessages() == 0) {
+                    break;
+                }
                 connect_sub();
                 if (!running) break;
                 sub();
