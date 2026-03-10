@@ -9,6 +9,7 @@
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Publisher extends Thread {
 
@@ -34,7 +35,11 @@ public class Publisher extends Thread {
     }
 
     private void supply() {
-        this.message = "test123";
+        String tempMessage = "";
+        for (int i = 0; i < 10 + ThreadLocalRandom.current().nextInt(15); i++) {
+            tempMessage += (char)(ThreadLocalRandom.current().nextInt(26) + 97);
+        }
+        this.message = tempMessage;
         System.out.println(label("SUPPLY message \"" + this.message + "\""));
     }
 
