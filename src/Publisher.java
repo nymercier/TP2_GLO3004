@@ -81,12 +81,10 @@ public class Publisher extends Thread {
                     continue;
                 }
                 supply();
-                synchronized(Publisher.class) {
-                    connect_pub();
-                    if (!running) break;
-                    pub();
-                    close_pub();
-                }
+                connect_pub();
+                if (!running) break;
+                pub();
+                close_pub();
 
             }
         } catch (InterruptedException e) {
