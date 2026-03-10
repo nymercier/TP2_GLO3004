@@ -19,7 +19,6 @@ public class Publisher extends Thread {
     private boolean running = true;
     private final Object lock = new Object();
     private String message;
-    private final Random generateurMessages;
 
     public Publisher(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
@@ -27,7 +26,6 @@ public class Publisher extends Thread {
         this.numero  = numero;
         this.broker  = broker;
         this.message = "";
-        this.generateurMessages = new Random();
         setName(app + "." + prefixe + "." + numero);
     }
 
