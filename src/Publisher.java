@@ -78,13 +78,16 @@ public class Publisher extends Thread {
         try {
             while (running) {
                 if (this.broker.nbMessages() == this.broker.getN()) {
-                    break;
+                    continue;
                 }
                 supply();
-                connect_pub();
-                if (!running) break;
-                pub();
-                close_pub();
+                synchronized(Publisher.class) {
+                    connect_pub();
+                    if (!running) break;
+                    pub();
+                    close_pub();
+                }
+
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

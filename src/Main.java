@@ -24,6 +24,7 @@ public class Main {
         System.out.println("  s=" + NB_S + "  (subscribers)");
         System.out.println("  t=" + tempsExecution + " ms  (durée)");
         System.out.println("========================");
+        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
 
         String[] apps = {"i", "t"};
 
@@ -60,7 +61,6 @@ public class Main {
             Thread.currentThread().interrupt();
         }
 
-        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
         // Arrêt propre (graceful shutdown)
         for (Broker b : brokers.values()) b.arreter();
 

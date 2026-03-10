@@ -52,12 +52,14 @@ public class Subscriber extends Thread {
         try {
             while (running) {
                 if (this.broker.nbMessages() == 0) {
-                    break;
+                    continue;
                 }
-                connect_sub();
-                if (!running) break;
-                sub();
-                close_sub();
+                synchronized(Subscriber.class) {
+                    connect_sub();
+                    if (!running) break;
+                    sub();
+                    close_sub();
+                }
                 consume();
             }
         } catch (InterruptedException e) {
