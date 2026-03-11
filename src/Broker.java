@@ -14,19 +14,19 @@ import java.util.concurrent.Semaphore;
 public class Broker {
 
     private final int N;
-    private final String app;
     private final Semaphore places;    // contrôle connect_pub
     private final Semaphore messages;  // msgs présents → contrôle connect_sub
     private final Semaphore mutex = new Semaphore(1, true);
     private boolean running = true;
-    private ArrayList<String> listeMessages;
+    private ArrayList<String> listeMessagesIndemnisation;
+    private ArrayList<String> listeMessagesTarification;
 
-    public Broker(String app, int n) {
-        this.N        = n;
-        this.app      = app;
-        this.places   = new Semaphore(N, true);             // éviter la famine
+    public Broker(int n) {
+        this.N = n;
+        this.places = new Semaphore(N, true);             // éviter la famine
         this.messages = new Semaphore(0, true);
-        this.listeMessages = new ArrayList<String>();
+        this.listeMessagesIndemnisation = new ArrayList<String>();
+        this.listeMessagesTarification = new ArrayList<String>();
     }
 
     public int nbMessages() {
@@ -36,7 +36,7 @@ public class Broker {
 
     private void log(String threadName, String action, String message) {
         System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
-                app, nbMessages(), N, threadName, action, message);
+                threadName.charAt(0), nbMessages(), N, threadName, action, message);
     }
 
     /**
@@ -61,7 +61,7 @@ public class Broker {
      */
     public void pub(String threadName, String message) {
         try {
-            queue(message);
+            queue(message, threadName.charAt(0));
             messages.release(); // i → i+1
             log(threadName, "PUB", message);
         }
@@ -71,8 +71,12 @@ public class Broker {
 
     }
 
-    private void queue(String message) {
-        this.listeMessages.add(message);
+    private void queue(String message, char app) {
+        if (app == 'i') {
+            this.listeMessagesIndemnisation.add(message);
+        } else {
+            this.listeMessagesTarification.add(message);
+        }
     }
 
     public void closePub(String threadName) {
@@ -104,12 +108,21 @@ public class Broker {
      */
     public String sub(String threadName) {
         try {
-            log(threadName, "SUB", this.listeMessages.getFirst());
+            String messageRetour = dequeue(threadName.charAt(0));
+            log(threadName, "SUB", messageRetour);
             places.release();          // i → i-1
-            return this.listeMessages.removeFirst();
+            return messageRetour;
         }
         finally {
             mutex.release();
+        }
+    }
+
+    private String dequeue(char app) {
+        if (app == 'i') {
+            return this.listeMessagesIndemnisation.removeFirst();
+        } else {
+            return this.listeMessagesTarification.removeFirst();
         }
     }
 
@@ -129,10 +142,10 @@ public class Broker {
      */
     public void arreter() {
         running = false;
-        System.out.println("[Broker " + app + "] Arrêt demandé — libération des sémaphores");
+        System.out.println("[Broker] Arrêt demandé — libération des sémaphores");
         places.release(N);
         messages.release(N);
-        System.out.println("[Broker " + app + "] Sémaphores libérés");
+        System.out.println("[Broker] Sémaphores libérés");
     }
 }
 

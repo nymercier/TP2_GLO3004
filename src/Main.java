@@ -8,10 +8,10 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        int N = 2;
+        int N = 6;
         int NB_P = 2;
-        int NB_S = 5;
-        int tempsExecution = 15;
+        int NB_S = 3;
+        int tempsExecution = 20;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
@@ -27,17 +27,14 @@ public class Main {
 
         String[] apps = {"i", "t"};
 
-        // Un Broker par app
-        Map<String, Broker> brokers = new HashMap<>();
-        for (String app : apps) {
-            brokers.put(app, new Broker(app, N));
-        }
+        // Créer le broker
+        Broker broker = new Broker(N);
 
         // NB_P publishers par app
         ArrayList<Publisher> publishers = new ArrayList<>();
         for (String app : apps) {
             for (int i = 1; i <= NB_P; i++) {
-                publishers.add(new Publisher(app, "publisher", i, brokers.get(app)));
+                publishers.add(new Publisher(app, "publisher", i, broker));
             }
         }
 
@@ -45,7 +42,7 @@ public class Main {
         ArrayList<Subscriber> subscribers = new ArrayList<>();
         for (String app : apps) {
             for (int i = 1; i <= NB_S; i++) {
-                subscribers.add(new Subscriber(app, "subscriber", i, brokers.get(app)));
+                subscribers.add(new Subscriber(app, "subscriber", i, broker));
             }
         }
 
@@ -54,18 +51,21 @@ public class Main {
         for (Subscriber s : subscribers) s.start();
 
         // Pour le paramètre t (exécution pendant t ms)
+        long temps = System.currentTimeMillis();
+        System.out.println(temps);
         try {
             Thread.sleep(tempsExecution);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        System.out.println(System.currentTimeMillis() - temps);
 
         System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
 
         // Arrêt propre (graceful shutdown)
         for (Publisher p : publishers) p.arreter();
         for (Subscriber s : subscribers) s.arreter();
-        for (Broker b : brokers.values()) b.arreter();
+        broker.arreter();
 
         for (Publisher p : publishers) {
             p.arreter();
