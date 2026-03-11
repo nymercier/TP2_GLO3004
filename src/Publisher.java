@@ -9,6 +9,7 @@
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Publisher extends Thread {
@@ -19,13 +20,15 @@ public class Publisher extends Thread {
     private final Broker broker;
     private volatile boolean running = true;
     private final Object lock = new Object();
+    private final Semaphore mutex;
     private String message;
 
-    public Publisher(String app, String prefixe, int numero, Broker broker) {
+    public Publisher(String app, String prefixe, int numero, Broker broker, Semaphore mutex) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
+        this.mutex = mutex;
         this.message = "";
         setName(app + "." + prefixe + "." + numero);
     }
@@ -46,13 +49,11 @@ public class Publisher extends Thread {
 
     private void connect_pub() throws InterruptedException {
         broker.connectPub(getName());  // bloque si file pleine
-        System.out.println(label("CONNECT_PUB"));
     }
 
     private void pub() {
         broker.pub(getName(), this.message);
         checkAction(getName(), "PUB");
-        System.out.println(label("PUB"));
     }
 
     // Est-ce FORBIDDEN fonctionne ?
@@ -69,15 +70,18 @@ public class Publisher extends Thread {
 
     private void close_pub() {
         broker.closePub(getName());
-        System.out.println(label("CLOSE_PUB"));
+        this.message = "";
     }
 
     @Override
     public void run() {
         try {
             while (running) {
-                if (this.broker.nbMessagesApp(this.app.charAt(0)) != this.broker.getN()) {
+                if (this.message == "") {
                     supply();
+                }
+                mutex.acquire();
+                if (this.broker.nbMessagesApp(this.app.charAt(0)) != this.broker.getN()) {
                     if (!running) break;
                     connect_pub();
                     if (!running) {
@@ -86,6 +90,9 @@ public class Publisher extends Thread {
                     }
                     pub();
                     close_pub();
+                    mutex.release();
+                } else {
+                    mutex.release();
                 }
             }
         } catch (InterruptedException e) {

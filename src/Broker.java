@@ -16,15 +16,16 @@ public class Broker {
     private final int N;
     private final Semaphore places;    // contrôle connect_pub
     private final Semaphore messages;  // msgs présents → contrôle connect_sub
-    private final Semaphore mutex = new Semaphore(1, true);
+    private final Semaphore mutex;
     private boolean running = true;
     private ArrayList<String> listeMessagesIndemnisation;
     private ArrayList<String> listeMessagesTarification;
 
-    public Broker(int n) {
+    public Broker(int n, Semaphore mutex) {
         this.N = n;
         this.places = new Semaphore(N, true);             // éviter la famine
         this.messages = new Semaphore(0, true);
+        this.mutex = mutex;
         this.listeMessagesIndemnisation = new ArrayList<String>();
         this.listeMessagesTarification = new ArrayList<String>();
     }
@@ -57,11 +58,6 @@ public class Broker {
     public void connectPub(String threadName) throws InterruptedException {
         places.acquire();
         if (!isRunning()) throw new InterruptedException("Broker arrêté");
-        mutex.acquire();
-        if (!isRunning()) {
-            mutex.release();
-            throw new InterruptedException("Broker arrêté");
-        }
         log(threadName, "CONNECT_PUB", "connexion");
     }
 
@@ -71,14 +67,9 @@ public class Broker {
      * Production
      */
     public void pub(String threadName, String message) {
-        try {
-            queue(message, threadName.charAt(0));
-            messages.release(); // i → i+1
-            log(threadName, "PUB", message);
-        }
-        finally {
-            mutex.release();
-        }
+        queue(message, threadName.charAt(0));
+        messages.release(); // i → i+1
+        log(threadName, "PUB", message);
 
     }
 
@@ -103,11 +94,6 @@ public class Broker {
     public void connectSub(String threadName) throws InterruptedException {
         messages.acquire();
         if (!isRunning()) throw new InterruptedException("Broker arrêté");
-        mutex.acquire();
-        if (!isRunning()) {
-            mutex.release();
-            throw new InterruptedException("Broker arrêté");
-        }
         log(threadName, "CONNECT_SUB", "subscription");
     }
 
@@ -118,15 +104,10 @@ public class Broker {
      * Consommation
      */
     public String sub(String threadName) {
-        try {
-            String messageRetour = dequeue(threadName.charAt(0));
-            log(threadName, "SUB", messageRetour);
-            places.release();          // i → i-1
-            return messageRetour;
-        }
-        finally {
-            mutex.release();
-        }
+        String messageRetour = dequeue(threadName.charAt(0));
+        log(threadName, "SUB", messageRetour);
+        places.release();          // i → i-1
+        return messageRetour;
     }
 
     private String dequeue(char app) {

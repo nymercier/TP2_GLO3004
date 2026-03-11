@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 
 // Je pense que c'est plus un sémaphore qu'une barrière?
@@ -11,7 +12,7 @@ public class Main {
         int N = 8;
         int NB_P = 3;
         int NB_S = 4;
-        int tempsExecution = 50;
+        int tempsExecution = 40;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
@@ -27,14 +28,17 @@ public class Main {
 
         String[] apps = {"i", "t"};
 
+        // Créer le mutex
+        Semaphore mutex = new Semaphore(1, true);
+
         // Créer le broker
-        Broker broker = new Broker(N);
+        Broker broker = new Broker(N, mutex);
 
         // NB_P publishers par app
         ArrayList<Publisher> publishers = new ArrayList<>();
         for (String app : apps) {
             for (int i = 1; i <= NB_P; i++) {
-                publishers.add(new Publisher(app, "publisher", i, broker));
+                publishers.add(new Publisher(app, "publisher", i, broker, mutex));
             }
         }
 
@@ -42,7 +46,7 @@ public class Main {
         ArrayList<Subscriber> subscribers = new ArrayList<>();
         for (String app : apps) {
             for (int i = 1; i <= NB_S; i++) {
-                subscribers.add(new Subscriber(app, "subscriber", i, broker));
+                subscribers.add(new Subscriber(app, "subscriber", i, broker, mutex));
             }
         }
 

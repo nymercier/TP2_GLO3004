@@ -6,6 +6,8 @@
  * i.subscriber.2 CONNECT_SUB
  */
 
+import java.util.concurrent.Semaphore;
+
 public class Subscriber extends Thread {
 
     private final String app;      // "i" ou "t"
@@ -13,13 +15,15 @@ public class Subscriber extends Thread {
     private final int    numero;   // 1, 2, 3, ...
     private final Broker broker;
     private volatile boolean running = true;
+    private final Semaphore mutex;
     private String message;
 
-    public Subscriber(String app, String prefixe, int numero, Broker broker) {
+    public Subscriber(String app, String prefixe, int numero, Broker broker, Semaphore mutex) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
+        this.mutex = mutex;
         this.message = "";
         setName(app + "." + prefixe + "." + numero);
     }
@@ -30,12 +34,10 @@ public class Subscriber extends Thread {
 
     private void connect_sub() throws InterruptedException {
         broker.connectSub(getName());
-        System.out.println(label("CONNECT_SUB"));
     }
 
     private void sub() {
         this.message = broker.sub(getName());
-        System.out.println(label("SUB"));
     }
 
     private void consume() {
@@ -44,13 +46,13 @@ public class Subscriber extends Thread {
 
     private void close_sub() {
         broker.closeSub(getName());
-        System.out.println(label("CLOSE_SUB"));
     }
 
     @Override
     public void run() {
         try {
             while (running) {
+                mutex.acquire();
                 if (this.broker.nbMessagesApp(this.app.charAt(0)) != 0) {
                     connect_sub();
                     if (!running) {
@@ -58,8 +60,11 @@ public class Subscriber extends Thread {
                         break;
                     }
                     sub();
-                    consume();
                     close_sub();
+                    mutex.release();
+                    consume();
+                } else {
+                    mutex.release();
                 }
             }
         } catch (InterruptedException e) {
