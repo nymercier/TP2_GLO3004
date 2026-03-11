@@ -12,7 +12,7 @@ public class Subscriber extends Thread {
     private final String prefixe;  // "subscriber"
     private final int    numero;   // 1, 2, 3, ...
     private final Broker broker;
-    private boolean running = true;
+    private volatile boolean running = true;
     private String message;
 
     public Subscriber(String app, String prefixe, int numero, Broker broker) {
@@ -51,18 +51,19 @@ public class Subscriber extends Thread {
     public void run() {
         try {
             while (running) {
-                if (this.broker.nbMessages() == 0) {
-                    continue;
-                }
                 connect_sub();
-                if (!running) break;
+                if (!running) {
+                    broker.closeSub(getName());
+                    break;
+                }
                 sub();
-                close_sub();
                 consume();
+                close_sub();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        System.out.println(label("TERMINÉ"));
     }
 
     public void arreter() {

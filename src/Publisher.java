@@ -17,7 +17,7 @@ public class Publisher extends Thread {
     private final String prefixe;  // "publisher" ou "subscriber"
     private final int numero;
     private final Broker broker;
-    private boolean running = true;
+    private volatile boolean running = true;
     private final Object lock = new Object();
     private String message;
 
@@ -44,7 +44,6 @@ public class Publisher extends Thread {
         System.out.println(label("SUPPLY message \"" + this.message + "\""));
     }
 
-    // Sortir "proprement"
     private void connect_pub() throws InterruptedException {
         broker.connectPub(getName());  // bloque si file pleine
         System.out.println(label("CONNECT_PUB"));
@@ -77,19 +76,20 @@ public class Publisher extends Thread {
     public void run() {
         try {
             while (running) {
-                if (this.broker.nbMessages() == this.broker.getN()) {
-                    continue;
-                }
                 supply();
-                connect_pub();
                 if (!running) break;
+                connect_pub();
+                if (!running) {
+                    broker.closePub(getName());
+                    break;
+                }
                 pub();
                 close_pub();
-
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        System.out.println(label("TERMINÉ"));
     }
 
     public void arreter() {

@@ -10,8 +10,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         int N = 2;
         int NB_P = 2;
-        int NB_S = 3;
-        int tempsExecution = 10;
+        int NB_S = 5;
+        int tempsExecution = 15;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
@@ -24,7 +24,6 @@ public class Main {
         System.out.println("  s=" + NB_S + "  (subscribers)");
         System.out.println("  t=" + tempsExecution + " ms  (durée)");
         System.out.println("========================");
-        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
 
         String[] apps = {"i", "t"};
 
@@ -61,19 +60,26 @@ public class Main {
             Thread.currentThread().interrupt();
         }
 
+        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
+
         // Arrêt propre (graceful shutdown)
+        for (Publisher p : publishers) p.arreter();
+        for (Subscriber s : subscribers) s.arreter();
         for (Broker b : brokers.values()) b.arreter();
 
         for (Publisher p : publishers) {
             p.arreter();
-            p.join(500);
+            p.join(50);
+            System.out.println("[Main] Publisher " + p.getName() + " état: " + p.getState());
         }
         for (Subscriber s : subscribers) {
             s.arreter();
-            s.join(500);
+            s.join(50);
+            System.out.println("[Main] Subscriber " + s.getName() + " état: " + s.getState());
         }
 
         System.out.println("=== Système arrêté ===");
+
 
 //        CyclicBarrier barriereConnectPub = new CyclicBarrier(2);
 //        CyclicBarrier barrierePub = new CyclicBarrier(2);

@@ -17,6 +17,7 @@ public class Broker {
     private final String app;
     private final Semaphore places;    // contrôle connect_pub
     private final Semaphore messages;  // msgs présents → contrôle connect_sub
+    private final Semaphore mutex = new Semaphore(1, true);
     private boolean running = true;
     private ArrayList<String> listeMessages;
 
@@ -28,22 +29,15 @@ public class Broker {
         this.listeMessages = new ArrayList<String>();
     }
 
-    public int getN() { return this.N; }
-
     public int nbMessages() {
         return Math.max(0, N - places.availablePermits());
     }
 
-    private void log(String threadName, String action) {
-        System.out.printf("[Broker %s | %d/%d msgs] %s %s%n",
-                app, nbMessages(), N, threadName, action);
-    }
 
     private void log(String threadName, String action, String message) {
         System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
                 app, nbMessages(), N, threadName, action, message);
     }
-
 
     /**
      * connect_pub : le publisher attend qu'il y ait de la place
@@ -51,6 +45,13 @@ public class Broker {
      */
     public void connectPub(String threadName) throws InterruptedException {
         places.acquire();
+        if (!isRunning()) throw new InterruptedException("Broker arrêté");
+        mutex.acquire();
+        if (!isRunning()) {
+            mutex.release();
+            throw new InterruptedException("Broker arrêté");
+        }
+        log(threadName, "CONNECT_PUB", "connexion");
     }
 
     /**
@@ -59,9 +60,15 @@ public class Broker {
      * Production
      */
     public void pub(String threadName, String message) {
-        messages.release(); // i → i+1
-        queue(message);
-        log(threadName, "PUB", message);
+        try {
+            queue(message);
+            messages.release(); // i → i+1
+            log(threadName, "PUB", message);
+        }
+        finally {
+            mutex.release();
+        }
+
     }
 
     private void queue(String message) {
@@ -71,7 +78,7 @@ public class Broker {
     public void closePub(String threadName) {
         // action observable dans les traces données par le prof
         // i.publisher.1 CLOSE_PUB
-        log(threadName, "CLOSE_PUB");
+        log(threadName, "CLOSE_PUB", "fermeture");
     }
 
     /**
@@ -80,8 +87,15 @@ public class Broker {
      */
     public void connectSub(String threadName) throws InterruptedException {
         messages.acquire();
-        log(threadName, "CONNECT_SUB");
+        if (!isRunning()) throw new InterruptedException("Broker arrêté");
+        mutex.acquire();
+        if (!isRunning()) {
+            mutex.release();
+            throw new InterruptedException("Broker arrêté");
+        }
+        log(threadName, "CONNECT_SUB", "subscription");
     }
+
 
     /**
      * sub + dequeue : consommation effective
@@ -89,15 +103,20 @@ public class Broker {
      * Consommation
      */
     public String sub(String threadName) {
-        places.release();          // i → i-1
-        log(threadName, "SUB", this.listeMessages.getFirst());
-        return this.listeMessages.removeFirst();
+        try {
+            log(threadName, "SUB", this.listeMessages.getFirst());
+            places.release();          // i → i-1
+            return this.listeMessages.removeFirst();
+        }
+        finally {
+            mutex.release();
+        }
     }
 
     public void closeSub(String threadName) {
         // action observable dans les traces données par le prof
         // i.subscriber.2 CLOSE_SUB
-        log(threadName, "CLOSE_SUB");
+        log(threadName, "CLOSE_SUB", "fermeture");
     }
 
     public boolean isRunning() {
@@ -110,8 +129,10 @@ public class Broker {
      */
     public void arreter() {
         running = false;
+        System.out.println("[Broker " + app + "] Arrêt demandé — libération des sémaphores");
         places.release(N);
         messages.release(N);
+        System.out.println("[Broker " + app + "] Sémaphores libérés");
     }
 }
 
