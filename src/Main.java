@@ -51,14 +51,11 @@ public class Main {
         for (Subscriber s : subscribers) s.start();
 
         // Pour le paramètre t (exécution pendant t ms)
-        long temps = System.currentTimeMillis();
-        System.out.println(temps);
         try {
             Thread.sleep(tempsExecution);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println(System.currentTimeMillis() - temps);
 
         System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
 
