@@ -8,10 +8,10 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        int N = 6;
+        int N = 4;
         int NB_P = 2;
-        int NB_S = 3;
-        int tempsExecution = 20;
+        int NB_S = 2;
+        int tempsExecution = 30;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
