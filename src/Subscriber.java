@@ -51,14 +51,16 @@ public class Subscriber extends Thread {
     public void run() {
         try {
             while (running) {
-                connect_sub();
-                if (!running) {
-                    broker.closeSub(getName());
-                    break;
+                if (this.broker.nbMessagesApp(this.app.charAt(0)) != 0) {
+                    connect_sub();
+                    if (!running) {
+                        broker.closeSub(getName());
+                        break;
+                    }
+                    sub();
+                    consume();
+                    close_sub();
                 }
-                sub();
-                consume();
-                close_sub();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

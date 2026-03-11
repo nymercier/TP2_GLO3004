@@ -33,6 +33,17 @@ public class Broker {
         return Math.max(0, N - places.availablePermits());
     }
 
+    public int nbMessagesApp(char app) {
+        if (app == 'i') {
+            return this.listeMessagesIndemnisation.size();
+        } else {
+            return this.listeMessagesTarification.size();
+        }
+    }
+
+    public int getN() {
+        return this.N;
+    }
 
     private void log(String threadName, String action, String message) {
         System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
