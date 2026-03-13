@@ -36,8 +36,7 @@ public class Broker {
     private void log(String threadName, String action, String message) {
         synchronized (System.out) {
             int nbMessagesReels = listeMessagesIndemnisation.size() + listeMessagesTarification.size();
-
-            System.out.printf("[Broker %s | [%d/%d] | %-15s | %-12s | %s%n",
+            System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
                     threadName.charAt(0), nbMessagesReels, N, threadName, action, message);
         }
     }

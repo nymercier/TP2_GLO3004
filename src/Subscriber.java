@@ -39,16 +39,17 @@ public class Subscriber extends Thread {
             while (running) {
                 broker.connectSub(getName());
                 String msg = broker.sub(getName());
-                broker.closeSub(getName());
 
                 if (msg != null) {
-                    System.out.println(label("CONSUME message \"" + this.message + "\""));
+                    synchronized (System.out) {
+                        System.out.println(label("CONSUME message \"" + msg + "\""));
+                    }
                 }
+                broker.closeSub(getName());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println(label("TERMINÉ"));
     }
 
     public void arreter() {

@@ -6,7 +6,7 @@ public class Main {
         int N = 3;
         int NB_P = 2;
         int NB_S = 3;
-        int tempsExecution = 20;
+        int tempsExecution = 200;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));

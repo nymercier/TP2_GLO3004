@@ -36,7 +36,9 @@ public class Publisher extends Thread {
             tempMessage += (char)(ThreadLocalRandom.current().nextInt(26) + 97);
         }
         this.message = tempMessage;
-        System.out.println(label("SUPPLY message \"" + this.message + "\""));
+        synchronized (System.out) {
+            System.out.println(label("SUPPLY message \"" + this.message + "\""));
+        }
     }
 
     @Override
