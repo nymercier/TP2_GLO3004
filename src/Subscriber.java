@@ -6,8 +6,6 @@
  * i.subscriber.2 CONNECT_SUB
  */
 
-import java.util.concurrent.Semaphore;
-
 public class Subscriber extends Thread {
 
     private final String app;      // "i" ou "t"
@@ -15,15 +13,13 @@ public class Subscriber extends Thread {
     private final int    numero;   // 1, 2, 3, ...
     private final Broker broker;
     private volatile boolean running = true;
-    private final Semaphore mutex;
     private String message;
 
-    public Subscriber(String app, String prefixe, int numero, Broker broker, Semaphore mutex) {
+    public Subscriber(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
-        this.mutex = mutex;
         this.message = "";
         setName(app + "." + prefixe + "." + numero);
     }
@@ -32,39 +28,21 @@ public class Subscriber extends Thread {
         return app + "." + prefixe + "." + numero + " " + action;
     }
 
-    private void connect_sub() throws InterruptedException {
-        broker.connectSub(getName());
-    }
-
-    private void sub() {
-        this.message = broker.sub(getName());
-    }
-
-    private void consume() {
-        System.out.println(label("CONSUME message \"" + this.message + "\""));
-    }
-
-    private void close_sub() {
-        broker.closeSub(getName());
-    }
+//    private void consume(String msg) {
+//        this.message = msg;
+//        System.out.println(label("CONSUME message \"" + this.message + "\""));
+//    }
 
     @Override
     public void run() {
         try {
             while (running) {
-                mutex.acquire();
-                if (this.broker.nbMessagesApp(this.app.charAt(0)) != 0) {
-                    connect_sub();
-                    if (!running) {
-                        broker.closeSub(getName());
-                        break;
-                    }
-                    sub();
-                    close_sub();
-                    mutex.release();
-                    consume();
-                } else {
-                    mutex.release();
+                broker.connectSub(getName());
+                String msg = broker.sub(getName());
+                broker.closeSub(getName());
+
+                if (msg != null) {
+                    System.out.println(label("CONSUME message \"" + this.message + "\""));
                 }
             }
         } catch (InterruptedException e) {
@@ -78,57 +56,3 @@ public class Subscriber extends Thread {
         interrupt();
     }
 }
-
-
-//public class Subscriber extends Thread {
-//
-//    private String prefixe;
-//    private String app;
-//    private CyclicBarrier barriereConnectSub;
-//    private CyclicBarrier barriereSub;
-//    private boolean interrupted;
-//
-//    public Subscriber(String prefixe, String app, CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
-//        this.prefixe = prefixe;
-//        this.app = app;
-//        this.barriereConnectSub = barriereConnectSub;
-//        this.barriereSub = barriereSub;
-//        this.interrupted = false;
-//    }
-//
-//    private void connect_sub() {
-//        synchronized (Subscriber.class) {
-//            try {
-//                this.barriereConnectSub.await();
-//            } catch (BrokenBarrierException | InterruptedException e) {
-//                System.exit(0);
-//            }
-//            System.out.printf("Connection au broker par %s (%s).%n", this.prefixe, this.app);
-//            sub();
-//        }
-//    }
-//
-//    private void sub() {
-//        try {
-//            barriereSub.await();
-//        } catch (BrokenBarrierException | InterruptedException e) {
-//            System.exit(0);
-//        }
-//        System.out.printf("Réception d'un message par %s (%s).%n", this.prefixe, this.app);
-//    }
-//
-//    private void consume() {
-//        System.out.printf("Consommation d'un message par %s (%s).%n", this.prefixe, this.app);
-//    }
-//
-//    public void arreter() {
-//        this.interrupted = true;
-//    }
-//
-//    public void run() {
-//        while (!this.interrupted) {
-//            connect_sub();
-//            consume();
-//        }
-//    }
-//}

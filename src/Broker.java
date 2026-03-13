@@ -14,70 +14,64 @@ import java.util.concurrent.Semaphore;
 public class Broker {
 
     private final int N;
-    private final Semaphore places;    // contrôle connect_pub
-    private final Semaphore messages;  // msgs présents → contrôle connect_sub
-    private final Semaphore mutex;
+    private final Semaphore places;                         // contrôle connect_pub
+    private final Semaphore messagesIndemnisation;          // msgs présents I
+    private final Semaphore messagesTarification;           // msgs présents T
+    private final Semaphore mutex;                          // protège ArrayList
     private boolean running = true;
     private ArrayList<String> listeMessagesIndemnisation;
     private ArrayList<String> listeMessagesTarification;
 
     public Broker(int n, Semaphore mutex) {
         this.N = n;
-        this.places = new Semaphore(N, true);             // éviter la famine
-        this.messages = new Semaphore(0, true);
+        this.places = new Semaphore(N, true);
+        this.messagesIndemnisation = new Semaphore(0, true);
+        this.messagesTarification = new Semaphore(0, true);
         this.mutex = mutex;
         this.listeMessagesIndemnisation = new ArrayList<String>();
         this.listeMessagesTarification = new ArrayList<String>();
-    }
 
-    public int nbMessages() {
-        return Math.max(0, N - places.availablePermits());
-    }
-
-    public int nbMessagesApp(char app) {
-        if (app == 'i') {
-            return this.listeMessagesIndemnisation.size();
-        } else {
-            return this.listeMessagesTarification.size();
-        }
-    }
-
-    public int getN() {
-        return this.N;
     }
 
     private void log(String threadName, String action, String message) {
-        System.out.printf("[Broker %s | %d/%d msgs] %s %s, Message: %s%n",
-                threadName.charAt(0), nbMessages(), N, threadName, action, message);
-    }
+        synchronized (System.out) {
+            int nbMessagesReels = listeMessagesIndemnisation.size() + listeMessagesTarification.size();
 
+            System.out.printf("[Broker %s | [%d/%d] | %-15s | %-12s | %s%n",
+                    threadName.charAt(0), nbMessagesReels, N, threadName, action, message);
+        }
+    }
     /**
      * connect_pub : le publisher attend qu'il y ait de la place
-     * File est pleine (i == N).
      */
     public void connectPub(String threadName) throws InterruptedException {
         places.acquire();
-        if (!isRunning()) throw new InterruptedException("Broker arrêté");
+        if (!isRunning()) {
+            places.release();
+            throw new InterruptedException();
+        }
         log(threadName, "CONNECT_PUB", "connexion");
     }
 
-    /**
-     * pub + queue : dépôt effectif du message
-     * Incrémente le compteur de messages disponibles.
-     * Production
-     */
     public void pub(String threadName, String message) {
-        queue(message, threadName.charAt(0));
-        messages.release(); // i → i+1
-        log(threadName, "PUB", message);
+        try {
+            mutex.acquire(); // On entre dans la zone critique
+            if (threadName.startsWith("i")) {
+                listeMessagesIndemnisation.add(message);
+            } else {
+                listeMessagesTarification.add(message);
+            }
+            log(threadName, "PUB", message);
 
-    }
-
-    private void queue(String message, char app) {
-        if (app == 'i') {
-            this.listeMessagesIndemnisation.add(message);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
+        }
+        if (threadName.startsWith("i")) {
+            messagesIndemnisation.release();
         } else {
-            this.listeMessagesTarification.add(message);
+            messagesTarification.release();
         }
     }
 
@@ -87,37 +81,29 @@ public class Broker {
         log(threadName, "CLOSE_PUB", "fermeture");
     }
 
-    /**
-     * connect_sub : le subscriber attend qu'il y ait un message
-     * File est vide (i == 0).
-     */
     public void connectSub(String threadName) throws InterruptedException {
-        messages.acquire();
+        // On choisit le sémaphore selon le préfixe du thread
+        if (threadName.startsWith("i")) messagesIndemnisation.acquire();
+        else messagesTarification.acquire();
+
         if (!isRunning()) throw new InterruptedException("Broker arrêté");
         log(threadName, "CONNECT_SUB", "subscription");
     }
-
-
-    /**
-     * sub + dequeue : consommation effective
-     * Libère un slot pour les publishers.
-     * Consommation
-     */
     public String sub(String threadName) {
-        String messageRetour = dequeue(threadName.charAt(0));
-        log(threadName, "SUB", messageRetour);
-        places.release();          // i → i-1
-        return messageRetour;
-    }
-
-    private String dequeue(char app) {
-        if (app == 'i') {
-            return this.listeMessagesIndemnisation.removeFirst();
-        } else {
-            return this.listeMessagesTarification.removeFirst();
+        String msg = null;
+        try {
+            mutex.acquire();
+            if (threadName.startsWith("i")) msg = listeMessagesIndemnisation.removeFirst();
+            else msg = listeMessagesTarification.removeFirst();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
         }
+        places.release(); // i--
+        log(threadName, "SUB", msg);
+        return msg;
     }
-
     public void closeSub(String threadName) {
         // action observable dans les traces données par le prof
         // i.subscriber.2 CLOSE_SUB
@@ -134,92 +120,8 @@ public class Broker {
      */
     public void arreter() {
         running = false;
-        System.out.println("[Broker] Arrêt demandé — libération des sémaphores");
         places.release(N);
-        messages.release(N);
-        System.out.println("[Broker] Sémaphores libérés");
+        messagesIndemnisation.release(N);
+        messagesTarification.release(N);
     }
 }
-
-//import java.util.Random;
-//import java.util.concurrent.BrokenBarrierException;
-//import java.util.concurrent.CyclicBarrier;
-//
-//public class Broker extends Thread {
-//
-//    private int nombreMessagesEnTraitement;
-//    private int N;
-//    private int tempsExecution;
-//    private CyclicBarrier barriereConnectPub;
-//    private CyclicBarrier barrierePub;
-//    private CyclicBarrier barriereConnectSub;
-//    private CyclicBarrier barriereSub;
-//
-//    public Broker(int tempsExecution, int N, CyclicBarrier barriereConnectPub, CyclicBarrier barrierePub,
-//                  CyclicBarrier barriereConnectSub, CyclicBarrier barriereSub) {
-//        this.nombreMessagesEnTraitement = 0;
-//        this.tempsExecution = tempsExecution;
-//        this.N = N;
-//        this.barriereConnectPub = barriereConnectPub;
-//        this.barrierePub = barrierePub;
-//        this.barriereConnectSub = barriereConnectSub;
-//        this.barriereSub = barriereSub;
-//    }
-//
-//    private void connect_pub() {
-//        try {
-//            this.barriereConnectPub.await();
-//        } catch (InterruptedException | BrokenBarrierException e) {
-//            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
-//        }
-//        pub();
-//    }
-//
-//    private void pub() {
-//        try {
-//            this.barrierePub.await();
-//        } catch (InterruptedException | BrokenBarrierException e) {
-//            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
-//        }
-//        nombreMessagesEnTraitement++;
-//    }
-//
-//    private void connect_sub() {
-//        try {
-//            this.barriereConnectSub.await();
-//        } catch (InterruptedException | BrokenBarrierException e) {
-//            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
-//        }
-//        sub();
-//    }
-//
-//    private void sub() {
-//        try {
-//            this.barriereSub.await();
-//        } catch (InterruptedException | BrokenBarrierException e) {
-//            System.out.println("PROBLÈME: le broker s'est interrompu ou la barrière s'est brisée.");
-//        }
-//        nombreMessagesEnTraitement--;
-//    }
-//
-//    public void run() {
-//        Random choix = new Random();
-//        long start = System.currentTimeMillis();
-//        do {
-//            if (this.nombreMessagesEnTraitement == 0 || (this.barriereConnectSub.getNumberWaiting() == 0
-//                    && this.barriereConnectPub.getNumberWaiting() == 1)) {
-//                connect_pub();
-//            } else if (this.nombreMessagesEnTraitement == N || (this.barriereConnectPub.getNumberWaiting() == 0
-//                    && this.barriereConnectSub.getNumberWaiting() == 1)) {
-//                connect_sub();
-//            } else {
-//                if (choix.nextBoolean()) {
-//                    connect_pub();
-//                } else {
-//                    connect_sub();
-//                }
-//            }
-//        } while (System.currentTimeMillis() < start + this.tempsExecution);
-//    }
-//
-//}
