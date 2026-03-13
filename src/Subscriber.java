@@ -13,14 +13,12 @@ public class Subscriber extends Thread {
     private final int    numero;   // 1, 2, 3, ...
     private final Broker broker;
     private volatile boolean running = true;
-    private String message;
 
     public Subscriber(String app, String prefixe, int numero, Broker broker) {
         this.app     = app;
         this.prefixe = prefixe;
         this.numero  = numero;
         this.broker  = broker;
-        this.message = "";
         setName(app + "." + prefixe + "." + numero);
     }
 

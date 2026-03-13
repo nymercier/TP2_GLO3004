@@ -18,7 +18,7 @@ public class Broker {
     private final Semaphore messagesIndemnisation;          // msgs présents I
     private final Semaphore messagesTarification;           // msgs présents T
     private final Semaphore mutex;                          // protège ArrayList
-    private boolean running = true;
+    private volatile boolean running = true;
     private ArrayList<String> listeMessagesIndemnisation;
     private ArrayList<String> listeMessagesTarification;
 
@@ -44,8 +44,12 @@ public class Broker {
      * connect_pub : le publisher attend qu'il y ait de la place
      */
     public void connectPub(String threadName) throws InterruptedException {
+        // On attend qu'il y ait une place (i < N)
         places.acquire();
+        mutex.acquire();
+
         if (!isRunning()) {
+            mutex.release();
             places.release();
             throw new InterruptedException();
         }
@@ -53,60 +57,58 @@ public class Broker {
     }
 
     public void pub(String threadName, String message) {
-        try {
-            mutex.acquire(); // On entre dans la zone critique
-            if (threadName.startsWith("i")) {
-                listeMessagesIndemnisation.add(message);
-            } else {
-                listeMessagesTarification.add(message);
-            }
-            log(threadName, "PUB", message);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            mutex.release();
-        }
+        // Le mutex est acquis par connectPub
         if (threadName.startsWith("i")) {
+            listeMessagesIndemnisation.add(message);
             messagesIndemnisation.release();
         } else {
+            listeMessagesTarification.add(message);
             messagesTarification.release();
         }
+        log(threadName, "PUB", message);
     }
 
     public void closePub(String threadName) {
-        // action observable dans les traces données par le prof
-        // i.publisher.1 CLOSE_PUB
         log(threadName, "CLOSE_PUB", "fermeture");
+        mutex.release();
     }
 
     public void connectSub(String threadName) throws InterruptedException {
-        // On choisit le sémaphore selon le préfixe du thread
-        if (threadName.startsWith("i")) messagesIndemnisation.acquire();
-        else messagesTarification.acquire();
-
-        if (!isRunning()) throw new InterruptedException("Broker arrêté");
-        log(threadName, "CONNECT_SUB", "subscription");
-    }
-    public String sub(String threadName) {
-        String msg = null;
-        try {
-            mutex.acquire();
-            if (threadName.startsWith("i")) msg = listeMessagesIndemnisation.removeFirst();
-            else msg = listeMessagesTarification.removeFirst();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            mutex.release();
+        if (threadName.startsWith("i")) {
+            messagesIndemnisation.acquire();
+        } else {
+            messagesTarification.acquire();
         }
-        places.release(); // i--
+        // On verrouille le broker pour l'exclusivité
+        mutex.acquire();
+        try {
+            if (!isRunning()) {
+                throw new InterruptedException("Broker arrêté");
+            }
+            log(threadName, "CONNECT_SUB", "subscription");
+        } catch (InterruptedException e) {
+            mutex.release();
+            throw e;
+        }
+    }
+
+    public String sub(String threadName) {
+        // Le mutex est acquis par connectSub
+        String msg = null;
+        if (threadName.startsWith("i")) {
+            msg = listeMessagesIndemnisation.remove(0);
+        } else {
+            msg = listeMessagesTarification.remove(0);
+        }
+
         log(threadName, "SUB", msg);
         return msg;
     }
+
     public void closeSub(String threadName) {
-        // action observable dans les traces données par le prof
-        // i.subscriber.2 CLOSE_SUB
         log(threadName, "CLOSE_SUB", "fermeture");
+        places.release();
+        mutex.release();
     }
 
     public boolean isRunning() {

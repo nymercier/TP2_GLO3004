@@ -30,6 +30,9 @@ public class Publisher extends Thread {
     }
 
     private void supply() {
+        if (!running || Thread.currentThread().isInterrupted()) {
+            return;
+        }
         String tempMessage = "";
         int longueur = 10 + ThreadLocalRandom.current().nextInt(15);
         for (int i = 0; i <= longueur; i++) {
@@ -44,12 +47,12 @@ public class Publisher extends Thread {
     @Override
     public void run() {
         try {
-            while (running) {
+            while (running && !isInterrupted()) {
                 if (this.message == null || this.message.isEmpty()) {
                     supply();
                 }
                 broker.connectPub(getName());
-                if (!running) break;
+                if (!running || Thread.currentThread().isInterrupted()) break;
                 broker.pub(getName(), this.message);
                 this.message = "";
                 broker.closePub(getName());

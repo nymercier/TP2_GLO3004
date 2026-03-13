@@ -6,7 +6,7 @@ public class Main {
         int N = 3;
         int NB_P = 2;
         int NB_S = 3;
-        int tempsExecution = 200;
+        int tempsExecution = 35;
 
 //        int N = Integer.parseInt(System.getProperty("n", "1"));
 //        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
@@ -56,23 +56,25 @@ public class Main {
             Thread.currentThread().interrupt();
         }
 
-        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
-
         // Arrêt propre (graceful shutdown)
+        broker.arreter();
         for (Publisher p : publishers) p.arreter();
         for (Subscriber s : subscribers) s.arreter();
-        broker.arreter();
+
+        System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
+
 
         for (Publisher p : publishers) {
-            p.arreter();
+//            p.arreter();
             p.join(500);
             System.out.println("[Main] Publisher " + p.getName() + " état: " + p.getState());
         }
         for (Subscriber s : subscribers) {
-            s.arreter();
+//            s.arreter();
             s.join(500);
             System.out.println("[Main] Subscriber " + s.getName() + " état: " + s.getState());
         }
+
 
         System.out.println("=== Système arrêté ===");
         long elapsed = System.currentTimeMillis() - startTime;
