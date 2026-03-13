@@ -26,19 +26,20 @@ public class Subscriber extends Thread {
         return app + "." + prefixe + "." + numero + " " + action;
     }
 
-//    private void consume(String msg) {
-//        this.message = msg;
-//        System.out.println(label("CONSUME message \"" + this.message + "\""));
-//    }
-
     @Override
     public void run() {
         try {
             while (running) {
+                // Se connecter au broker
                 broker.connectSub(getName());
+
+                // Recevoir le message
                 String msg = broker.sub(getName());
+
+                // Se déconnecter du broker
                 broker.closeSub(getName());
 
+                // Consommer le message
                 if (msg != null) {
                     synchronized (System.out) {
                         System.out.println(label("CONSUME message \"" + msg + "\""));

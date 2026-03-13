@@ -33,6 +33,8 @@ public class Publisher extends Thread {
         if (!running || Thread.currentThread().isInterrupted()) {
             return;
         }
+
+        // Génération aléatoire
         String tempMessage = "";
         int longueur = 10 + ThreadLocalRandom.current().nextInt(15);
         for (int i = 0; i <= longueur; i++) {
@@ -48,13 +50,20 @@ public class Publisher extends Thread {
     public void run() {
         try {
             while (running && !isInterrupted()) {
+                // Générer le message
                 if (this.message == null || this.message.isEmpty()) {
                     supply();
                 }
+
+                // Se connecter au broker
                 broker.connectPub(getName());
                 if (!running || Thread.currentThread().isInterrupted()) break;
+
+                // Publier le message
                 broker.pub(getName(), this.message);
                 this.message = "";
+
+                // Se déconnecter du broker
                 broker.closePub(getName());
             }
         } catch (InterruptedException e) {
