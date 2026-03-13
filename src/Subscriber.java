@@ -37,13 +37,13 @@ public class Subscriber extends Thread {
             while (running) {
                 broker.connectSub(getName());
                 String msg = broker.sub(getName());
+                broker.closeSub(getName());
 
                 if (msg != null) {
                     synchronized (System.out) {
                         System.out.println(label("CONSUME message \"" + msg + "\""));
                     }
                 }
-                broker.closeSub(getName());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

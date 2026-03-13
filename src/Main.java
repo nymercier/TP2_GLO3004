@@ -3,15 +3,11 @@ import java.util.concurrent.Semaphore;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        int N = 3;
-        int NB_P = 2;
-        int NB_S = 3;
-        int tempsExecution = 35;
 
-//        int N = Integer.parseInt(System.getProperty("n", "1"));
-//        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
-//        int NB_S = Integer.parseInt(System.getProperty("s", "1"));
-//        int tempsExecution = Integer.parseInt(System.getProperty("t", "5"));
+        int N = Integer.parseInt(System.getProperty("n", "1"));
+        int NB_P = Integer.parseInt(System.getProperty("p", "1"));
+        int NB_S = Integer.parseInt(System.getProperty("s", "1"));
+        int tempsExecution = Integer.parseInt(System.getProperty("t", "5"));
 
         System.out.println("=== SYSTEM démarre ===");
         long startTime = System.currentTimeMillis();

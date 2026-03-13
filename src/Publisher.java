@@ -60,7 +60,6 @@ public class Publisher extends Thread {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println(label("TERMINÉ"));
     }
 
     public void arreter() {

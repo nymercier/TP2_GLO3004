@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="TP2_GLO3004:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/TP2_GLO3004_jar</output-path>
-    <root id="archive" name="TP2_GLO3004.jar">
-      <element id="module-output" name="TP2_GLO3004" />
-    </root>
-  </artifact>
-</component>
