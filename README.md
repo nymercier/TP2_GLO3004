@@ -44,11 +44,14 @@ Cela correspond au temps total d'exécution, incluant le graceful shutdown.
 
 **IMPLÉMENTATION**
 
-Le processus PUB3 correspond à la classe Publisher, qui hérite de la classe Thread. Pendant son exécution, un thread publisher fait (en boucle) les actions supply, connect_pub, pub et close_pub. <br />
-Le processus SUB3 correspond à la classe Subscriber, qui hérite de la classe Thread. Pendant son exécution, un thread subscriber fait (en boucle) les actions connect_sub, sub, close_sub et consume. <br />
+Le processus PUB3 correspond à la classe Publisher, qui hérite de la classe Thread. Pendant son exécution, un thread publisher fait (en boucle) les actions supply, connect_pub, pub et close_pub. 
+
+Le processus SUB3 correspond à la classe Subscriber, qui hérite de la classe Thread. Pendant son exécution, un thread subscriber fait (en boucle) les actions connect_sub, sub, close_sub et consume. 
+
 Nous avons choisi d'ajouter close_pub et close_sub (qui ne sont pas dans la spécification), pour aider à voir la durée de la connexion de chaque thread au broker. Ça permet de voir que les threads se connectent et se déconnectent au bon moment, donc qu'ils ne bloquent pas les autres threads quand ils ne sont pas supposé. 
+
 Le processus BROKER4 correspond à la classe Broker. Elle contient les méthodes connect_pub, pub et close_pub (partagées avec les publishers), ainsi que connect_sub, sub et close_sub (partagées avec les subscribers).
-Nous avons respecté 1 seul broker, mais nous avons exploré l'avenue d'avoir deux files pour gérer les "i" et "t", donc cela modifierait légèrement le FSP : <br />
+Nous avons respecté 1 seul broker, mais nous avons exploré l'avenue d'avoir deux files pour gérer les "i" et "t", donc cela modifierait le FSP : <br />
 BROKER_DUAL = PUBSUB_I[0][0], <br />
 PUBSUB_I[i:0..N][t:0..N] = ( <br />
     when (i < N) connect_pub_i -> pub_i -> close_pub_i -> PUBSUB_I[i+1][t] <br />
@@ -56,9 +59,13 @@ PUBSUB_I[i:0..N][t:0..N] = ( <br />
   | when (t < N) connect_pub_t -> pub_t -> close_pub_t -> PUBSUB_I[i][t+1] <br />
   | when (t > 0) connect_sub_t -> sub_t -> close_sub_t -> PUBSUB_I[i][t-1] <br />
 ).
-<br />
-La propriété FORBIDDEN est naturellement respectée, car les threads de la classe Publisher n'ont pas l'option de faire connect_sub, sub, close_sub ou consume et vice-versa.<br />
-Le processus CONTROLLER est implémenté à même les méthodes pub et sub qui incrémentent et décrémentent la variable contenant le nombre de messages stockés dans le broker.<br />
-La classe Main met le tout en commun, ça correspond au processus SYSTEM11.<br />
 
+
+La propriété FORBIDDEN est naturellement respectée, car les threads de la classe Publisher n'ont pas l'option de faire connect_sub, sub, close_sub ou consume et vice-versa.<br />
+
+Le processus CONTROLLER est implémenté à même les méthodes pub et sub qui incrémentent et décrémentent la variable contenant le nombre de messages stockés dans le broker. <br />
+
+La classe Main met le tout en commun, ça correspond au processus SYSTEM11, soit la mise en parralèle des éléments ci-hauts..<br />
+
+La synchronisation entre threads est assurée par l'utilisation de sémaphores, mutex et threads Java.
 
