@@ -4,10 +4,26 @@ import java.util.concurrent.Semaphore;
 public class Main {
     public static void main(String[] args) throws Exception {
 
+        /**
+         *
+         * SYSTEM11 de la spécification.
+         * Elle crée les différents processus (publishers, subscribers et broker),
+         * démarre les threads, puis arrête le système après un certain temps.
+         */
+
+        /**
+         * - n : capacité maximale du broker
+         * - p : nombre de publishers
+         * - s : nombre de subscribers
+         * - t : temps d'exécution du système (en millisecondes)
+         *
+         * Des valeurs par défaut sont utilisées.
+         */
+
         int N = Integer.parseInt(System.getProperty("n", "1"));
         int NB_P = Integer.parseInt(System.getProperty("p", "1"));
         int NB_S = Integer.parseInt(System.getProperty("s", "1"));
-        int tempsExecution = Integer.parseInt(System.getProperty("t", "5"));
+        int tempsExecution = Integer.parseInt(System.getProperty("t", "35"));
 
         System.out.println("=== SYSTEM démarre ===");
         long startTime = System.currentTimeMillis();
@@ -19,10 +35,10 @@ public class Main {
 
         String[] apps = {"i", "t"};
 
-        // Créer le mutex
+        // Créer le mutex pour protéger les structures partagées dans le broker.
         Semaphore mutex = new Semaphore(1, true);
 
-        // Créer le broker
+        // Créer le broker, BROKER4
         Broker broker = new Broker(N, mutex);
 
         // NB_P publishers par app
@@ -53,9 +69,9 @@ public class Main {
         }
 
         // Arrêt propre (graceful shutdown)
-        broker.arreter();
         for (Publisher p : publishers) p.arreter();
         for (Subscriber s : subscribers) s.arreter();
+        broker.arreter();
 
         System.out.println("=== Arrêt après " + tempsExecution + " ms ===");
 
@@ -63,12 +79,12 @@ public class Main {
         for (Publisher p : publishers) {
 //            p.arreter();
             p.join(500);
-            System.out.println("[Main] Publisher " + p.getName() + " état: " + p.getState());
+            System.out.println("[Main] Publisher : " + p.getName() + " état: " + p.getState());
         }
         for (Subscriber s : subscribers) {
 //            s.arreter();
             s.join(500);
-            System.out.println("[Main] Subscriber " + s.getName() + " état: " + s.getState());
+            System.out.println("[Main] Subscriber : " + s.getName() + " état: " + s.getState());
         }
 
 

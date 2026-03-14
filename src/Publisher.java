@@ -9,9 +9,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Publisher extends Thread {
 
-    private final String app;      // "i" ou "t"
-    private final String prefixe;  // "publisher" ou "subscriber"
-    private final int numero;
+    private final String app;       // "i" ou "t"
+    private final String prefixe;   // "publisher"
+    private final int numero;       // 1, 2, 3, ...
     private final Broker broker;
     private volatile boolean running = true;
     private String message;
@@ -29,6 +29,10 @@ public class Publisher extends Thread {
         return app + "." + prefixe + "." + numero + " " + action;
     }
 
+    /**
+     * supply : Un publisher génère un message aléatoire qui sera publié dans le broker.
+     */
+
     private void supply() {
         if (!running || Thread.currentThread().isInterrupted()) {
             return;
@@ -45,6 +49,16 @@ public class Publisher extends Thread {
             System.out.println(label("SUPPLY message \"" + this.message + "\""));
         }
     }
+
+    /**
+     * Boucle principale du publisher.
+     *
+     * Chaque thread publisher exécute en boucle les actions suivantes :
+     * supply -> connect_pub -> pub -> close_pub
+     *
+     * Cela correspond au processus PUB3 de la spécification FSP :
+     * PUB3 = (supply -> connect_pub -> pub -> PUB3)
+     */
 
     @Override
     public void run() {

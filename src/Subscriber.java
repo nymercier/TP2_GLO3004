@@ -26,6 +26,16 @@ public class Subscriber extends Thread {
         return app + "." + prefixe + "." + numero + " " + action;
     }
 
+    /**
+     * Boucle principale du subscriber.
+     *
+     * Chaque thread subscriber exécute en boucle :
+     * connect_sub -> sub -> close_sub -> consume
+     *
+     * Cela correspond au processus SUB3 de la spécification FSP :
+     * SUB3 = (connect_sub -> sub -> consume -> SUB3)
+     */
+
     @Override
     public void run() {
         try {

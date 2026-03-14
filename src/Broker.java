@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
-/*
+/**
  * Modélise BROKER4 du FSP :
  *      BROKER4 = PUBSUB[0],
  *      PUBSUB[i:0..N] = (when (i < N) connect_pub -> pub -> queue -> PUBSUB[i + 1]
@@ -41,7 +41,10 @@ public class Broker {
         }
     }
     /**
-     * connect_pub : le publisher attend qu'il y ait de la place
+     * connect_pub : Un publisher demande l'accès au broker pour publier un message.
+     * Implémentation :
+     *  - le sémaphore "places" garantit qu'il reste de la capacité
+     *  - le mutex garantit l'exclusion mutuelle pour accéder aux structures internes
      */
     public void connectPub(String threadName) throws InterruptedException {
         // On attend qu'il y ait une place (i < N)
@@ -56,8 +59,15 @@ public class Broker {
         log(threadName, "CONNECT_PUB", "connexion");
     }
 
+    /**
+     * pub : Un publisher publie un message dans le broker.
+     * Le message est ajouté à la file correspondant à l'application :
+     * - "i" pour indemnisation
+     * - "t" pour tarification
+     * (queue dans la spécification).
+     */
+
     public void pub(String threadName, String message) {
-        // Le mutex est acquis par connectPub
         if (threadName.startsWith("i")) {
             listeMessagesIndemnisation.add(message);
             messagesIndemnisation.release();
@@ -72,6 +82,13 @@ public class Broker {
         log(threadName, "CLOSE_PUB", "fermeture");
         mutex.release();
     }
+
+    /**
+     * connect_sub : Un subscriber demande l'accès au broker pour récupérer un message
+     * Implémentation :
+     *   - attente sur le sémaphore correspondant au type d'application
+     *   - acquisition du mutex pour garantir l'exclusion mutuelle
+     */
 
     public void connectSub(String threadName) throws InterruptedException {
         if (threadName.startsWith("i")) {
@@ -92,8 +109,13 @@ public class Broker {
         }
     }
 
+    /**
+     * sub : Un subscriber récupère un message depuis la file du broker.
+     * Le message est retiré de la liste correspondante.
+     * (dequeue dans la spécification).
+     */
+
     public String sub(String threadName) {
-        // Le mutex est acquis par connectSub
         String msg = null;
         if (threadName.startsWith("i")) {
             msg = listeMessagesIndemnisation.remove(0);
@@ -116,7 +138,7 @@ public class Broker {
     }
 
     /**
-     * Arrêt "propre" : on relâche tous les threads bloqués
+     * Arrêt "propre" : on met la variable "running" à false et on relâche tous les threads bloqués
      * en libérant les deux sémaphores avec N permits.
      */
     public void arreter() {
