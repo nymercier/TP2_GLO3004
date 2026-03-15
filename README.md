@@ -56,14 +56,17 @@ Cela nous a aidé à voir la durée de la connexion de chaque thread au broker. 
 
 Le processus BROKER4 correspond à la classe Broker. Elle contient les méthodes connect_pub, pub et close_pub (partagées avec les publishers), ainsi que connect_sub, sub et close_sub (partagées avec les subscribers).
 Nous avons respecté 1 seul broker, mais nous avons exploré l'avenue d'avoir deux files pour gérer les "i" et "t", donc cela modifierait le FSP : <br />
-BROKER_DUAL = PUBSUB_I[0][0], <br />
-PUBSUB_I[i:0..N][t:0..N] = ( <br />
-    when (i < N) connect_pub_i -> pub_i -> close_pub_i -> PUBSUB_I[i+1][t] <br />
-  | when (i > 0) connect_sub_i -> sub_i -> close_sub_i -> PUBSUB_I[i-1][t] <br />
-  | when (t < N) connect_pub_t -> pub_t -> close_pub_t -> PUBSUB_I[i][t+1] <br />
-  | when (t > 0) connect_sub_t -> sub_t -> close_sub_t -> PUBSUB_I[i][t-1] <br />
+BROKER4 = PUBSUB[0][0],
+PUBSUB[i:0..N][t:0..N] = (
+    when (i + t < N)
+        connect_pub_i -> pub_i -> close_pub_i -> PUBSUB[i+1][t]
+  | when (i + t < N)
+        connect_pub_t -> pub_t -> close_pub_t -> PUBSUB[i][t+1]
+  | when (i > 0)
+        connect_sub_i -> sub_i -> close_sub_i -> PUBSUB[i-1][t]
+  | when (t > 0)
+        connect_sub_t -> sub_t -> close_sub_t -> PUBSUB[i][t-1]
 ).
-
 
 La propriété FORBIDDEN est naturellement respectée, car les threads de la classe Publisher n'ont pas l'option de faire connect_sub, sub, close_sub ou consume et vice-versa.<br />
 
